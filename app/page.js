@@ -263,14 +263,19 @@ export default function Dashboard() {
   const [error, setError] = useState(null);
   const [autoGenerating, setAutoGenerating] = useState(false);
 
-  const fetchTweets = useCallback(async () => {
+  const fetchTweets = useCallback(async (retries = 2) => {
     try {
-      const res = await fetch("/api/tweets");
+      const res = await fetch("/api/tweets", { cache: "no-store" });
       if (!res.ok) throw new Error("Fetch hatası");
       const data = await res.json();
       setTweets(data);
+      setError(null);
     } catch (err) {
-      setError(err.message);
+      if (retries > 0) {
+        await new Promise((r) => setTimeout(r, 1000));
+        return fetchTweets(retries - 1);
+      }
+      setError("Bağlantı hatası. Sayfayı yenileyin.");
     } finally {
       setLoading(false);
     }
